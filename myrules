@@ -1,0 +1,132 @@
+
+//Sneaky redirect
+rule sneaky_redirect : javascript
+{
+    meta:
+        description = "[redirects using javascript and HTML,meta refresh tags, mouseover tags]"
+
+    strings:
+        $a = /onload *= *("|')setTimeout\(.+?,[0-9]*\)("|')/ nocase	// Javascript redirect 1
+        $b = /window.location *= *.*/ nocase	//Javascript redirect 2
+        $c = /<meta.*?http-equiv="refresh".*?\/>/ nocase  //Meta refresh redirect
+	$d = /onmouseover *= *("|')window.(open|location).*?/ nocase  //Mouseover redirect
+    condition:
+        $a or $b or $c or $d
+}
+
+//Hidden links
+rule hidden_link : hiddenlinks
+{
+	meta:
+		description = "[hidden links background and link color same]"
+	
+	strings:
+		$a = /<body .*?bgcolor *= *("|')(.*?)("|').*?>/  //finding bgcolor of page
+		$b = /a(.*?\n*?.*?){(.*?\n*?.*?)*?color *: *(.*?);(.*?\n*?.*?)*?}/  //finding bgccolor of links from css
+		$c = /body(.*?\n*?.*?){(.*?\n*?.*?)*?background\-color *: *(.*?);(.*?\n*?.*?)*?}/  //finding bgcolor of page from css
+	condition:
+		$a or $b or $c
+}
+
+//Autocomplete passwords
+rule autocomplete_password :	autocomplete
+{
+	meta:
+		description = "[password stored into cookies]"
+	strings:
+		$a = /<input *.*?type=("|')password("|').*?autocomplete=("|')on("|').*?/
+		$b = /<password.*?autocomplete=.on./
+	condition:
+		$a or $b
+}
+
+//External javascript files
+rule external_js : externaljavascript
+{
+	meta:
+		description = "[if no embedded javascript is found]"
+	strings:
+		$a = /<script *.*?src=.*?\.(php|js)/ 
+	condition:
+		$a
+}
+
+
+//Cross-site request forgery
+rule CSRF : csrf
+{
+	meta:
+		description = "[passing parameters through pages which are already authenticated without even knowing using forms]"
+	
+	strings:
+		$a = /<\n* *\n*form.*/  //Presence of a form in website
+		$b = /\.submit\(\)/	//document.submit() function
+		$c = /<\n* *\n*form *.*?action *= *("|')https?:\/\/.*?\/.*?\/.*?("|')/    //URL in form action atleast with two backslashes.
+		$d = /<\n* *\n*form *.*?method *= *("|')get("|')/	  //If type="GET" 
+	condition:
+		$a or $b or $c or $d
+}
+
+//DOM based cross site scripting
+rule DOM_based_XSS : xss  
+{
+	meta:
+		description = "[injecting scripts in a website which makes users credentials at risk]"
+	
+	strings:
+		$a = /alert\(.*?document\.cookie.*?\)/	//stealing cookies
+		$b = /(document\.baseURI)|((window\.)?location\.href)|(document\.URL)|(document\.documentURI)|(window.name)|(document.referrer)/	nocase //anything like http://www.example.com#<script>malcode<script> will run the malicious code(DOM based XSS)
+		$c = /(document\.write)|(\.innerHTML)/	//HTML modification sinks
+		$d = /\.src/
+		$e = /(eval)|(execScript)/  //execution related sinks
+	condition:
+		$a or $b or $c or $d or $e
+}
+
+//Frame busting
+rule frame_busting : frame_busting
+{
+	meta:
+		description = "[when an iframe is there, the website in that, checks whether its at the top and if not, it makes it self on the top]"
+	
+	strings: //consists of an if and a counter statement
+		$a = /if\(top(\.location)? *!= *self(\.location)?/
+		$b = /(self\.)?parent\.frames\.length *(>|!=) *0/
+		$c = /window *!= *top/
+		$d = /window\.(top|self) *!==? *window\.(top|self)/
+		$e = /parent *(&&)? *!=  *window/
+		//counter statements		
+		$f = /top\.location\.replace\((document|self)\.location\)/
+		$g = /top\.location\.href *= *((window\.location\.href)|(("|')URL("|')))/
+		$h = /top\.location *= *location/
+		$i = /top\.location\.replace\(window\.location\.pathname\)/
+	condition:
+		$a or $b or $c or $d or $e or $f or $f or $g or $h or $i
+}
+
+//Busting frame busting
+rule busting_frame_busting : busting_frame_busting
+{
+	meta:
+		description = "[techniques to defeat frame busting and using sites in iframe illegaly]"
+
+	strings:
+		$a = /<iframe.*?(src=.*?)?security=("|')restricted("|').*?(src=.*?)/    //javascript and cookies disabled in iframe
+		$b = /<iframe.*?(src=.*?)?sandbox.*?(src=.*?)?/  //javascript disabled. Cookies there(note, cookie stealing possible)
+		$c = "onbeforeunload"  //if this is there, it might be asking the user for leaving the main page
+	condition:
+		$a or $b or $c
+}
+
+
+//Keylogger
+rule keylogger : onkeypress
+{
+	meta:	
+		description = "[a key capturing mal]"
+	strings:
+		$a = /\.onkeypress/
+		$b = /String\.fromCharCode/
+	condition:
+		$a and $b
+}

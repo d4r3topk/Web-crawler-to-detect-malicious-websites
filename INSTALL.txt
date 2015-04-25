@@ -1,0 +1,7 @@
+To run the scripts in this repo,
+
+you need, 
+
+1.)python3
+2.)yara (pip3 install yara)
+3.)urllib
