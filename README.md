@@ -10,7 +10,7 @@ All the html files goes to the 'html' folder while all the HTTP header files goe
 Note : Please make sure both the folders are created before running the script.
 
 yara_demo.py - usage: python3 yara_demo.py
-example : python3 yara_demo.py
+example : python3 yara_demo.py [/path/to/rule/file]
 This script looks for files in the html folder, and if found, starts analysing the content file by file and displaying it on stdout. 
 
 There is one more file named myrules, which is a YARA rules file. This file has all the regular expressions for matching the malicious signatures.
